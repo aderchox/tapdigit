@@ -180,8 +180,11 @@ TapDigit.Lexer = function () {
             }
         }
 
-        if (number === '.') {
+        if (number === '.' && ch !== '\x00') {
             throw new SyntaxError('Expecting decimal digits after the dot sign');
+          }
+        if (number === '.') {
+        throw new SyntaxError('Incomplete expression');
         }
 
         return createToken(T.Number, number);
@@ -891,4 +894,3 @@ TapDigit.Editor = function (element) {
         deselect: deselect
     };
 };
-

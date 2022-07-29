@@ -70,7 +70,7 @@ function parse() {
             document.getElementById('tokens').innerHTML = str;
 
         } catch (e) {
-            document.getElementById('tokens').innerText = '';
+            document.getElementById("tokens").innerText = e.message;
         }
         parseId = undefined;
     }, 345);
