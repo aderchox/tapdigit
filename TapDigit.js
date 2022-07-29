@@ -44,6 +44,7 @@ TapDigit.Lexer = function () {
         marker = 0,
         T = TapDigit.Token;
 
+    // 'index' is always on next character as long as it's not processed, because as soon as next character is processed, the index is moved forward.
     function peekNextChar() {
         var idx = index;
         return ((idx < length) ? expression.charAt(idx) : '\x00');
@@ -88,6 +89,7 @@ TapDigit.Lexer = function () {
             if (!isWhiteSpace(ch)) {
                 break;
             }
+            // The white space character returned by this call needs not to be stored anywhere.
             getNextChar();
         }
     }
@@ -196,6 +198,7 @@ TapDigit.Lexer = function () {
         index = 0;
     }
 
+    // In order to be able to consume math expressions and produce a list of tokens represented by them, we shall have a function which recognize and get the next token.
     function next() {
         var token;
 
@@ -206,6 +209,7 @@ TapDigit.Lexer = function () {
 
         marker = index;
 
+        // Only one of the functions scanNumber, scanOperator and scanIdentifier will return non-undefined value. So whichever of them that returns such a value, we can be sure the new token is of that type and return it confidently.
         token = scanNumber();
         if (typeof token !== 'undefined') {
             return token;
