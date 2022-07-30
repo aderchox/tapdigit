@@ -74,6 +74,7 @@ function parse() {
             }
             document.getElementById('tokens').innerHTML = str;
 
+            // The AST, aka just 'syntax'.
             syntax = parser.parse(code);
 
             function stringify(object, key, depth) {

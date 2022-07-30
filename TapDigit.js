@@ -328,6 +328,7 @@ TapDigit.Parser = function () {
 
         if (token.type === T.Identifier) {
             token = lexer.next();
+            // For function calls, e.g., 'sin(pi/4)'.
             if (matchOp(lexer.peek(), '(')) {
                 return parseFunctionCall(token.value);
             } else {
@@ -367,6 +368,7 @@ TapDigit.Parser = function () {
         token = lexer.peek();
         if (matchOp(token, '-') || matchOp(token, '+')) {
             token = lexer.next();
+            // Call parseUnary recursively. There could be more than one '-/+'s, e.g., --4.
             expr = parseUnary();
             return {
                 'Unary': {
@@ -385,6 +387,7 @@ TapDigit.Parser = function () {
     function parseMultiplicative() {
         var expr, token;
 
+        // parseUnary is called first and earlier than the rest of the parseMultiplicative logic because parseUnary is more precedent, e.g., in '4 * -2', '-2' is more precedent than the '4 * -'.
         expr = parseUnary();
         token = lexer.peek();
         while (matchOp(token, '*') || matchOp(token, '/')) {
@@ -407,6 +410,7 @@ TapDigit.Parser = function () {
     function parseAdditive() {
         var expr, token;
 
+        // Because of higher precedence:
         expr = parseMultiplicative();
         token = lexer.peek();
         while (matchOp(token, '+') || matchOp(token, '-')) {
@@ -428,6 +432,7 @@ TapDigit.Parser = function () {
     function parseAssignment() {
         var token, expr;
 
+        // parseAdditive is called first and earlier than the rest of the parseAssignment logic because parseAdditive is more precedent, e.g., in 'x = 4 + 2', '4 + 2' is more precedent than the 'x = 4'.
         expr = parseAdditive();
 
         if (typeof expr !== 'undefined' && expr.Identifier) {
@@ -452,9 +457,11 @@ TapDigit.Parser = function () {
         return parseAssignment();
     }
 
+    // Called in the parser.html file, with user input as argument.
     function parse(expression) {
         var expr, token;
 
+        // Sets the lexer object's text to text entered by user (which could be a valid or an invalid expression). Also all parsing methods use the same lexer object so parseExpression needs no arguments passed.
         lexer.reset(expression);
         expr = parseExpression();
 
@@ -504,15 +511,19 @@ TapDigit.Context = function () {
     };
 };
 
+// EvalTest.js instantiates this (arbitrarily using a custom context). 
 TapDigit.Evaluator = function (ctx) {
 
     var parser = new TapDigit.Parser(),
+        // context could be passed by instantiator, otherwise the default context object will be used which consists of constants like "pi" and functions like "sin" and "floor", and variables which will be initially an empty object but new entries will be added to it as assignments get evaluated.
         context = (arguments.length < 1) ? new TapDigit.Context() : ctx;
+        // Note: ctx is not being checked to make sure it is an object, and worse than that, is not checked whether it contains the necessary properties Constants, Functions and Variables.
 
     function exec(node) {
         var left, right, expr, args, i;
 
         if (node.hasOwnProperty('Expression')) {
+            // 'Expression' is always a high-level node on the AST and needs to be evaluated recursively.
             return exec(node.Expression);
         }
 
@@ -520,10 +531,12 @@ TapDigit.Evaluator = function (ctx) {
             return parseFloat(node.Number);
         }
 
+        // E.g., '2 + 3', or 'x + 4'.
         if (node.hasOwnProperty('Binary')) {
             node = node.Binary;
             left = exec(node.left);
             right = exec(node.right);
+            // After the above recursive calls are done, we are sure that left and right are numbers and NOT strings, because eventually numbers are evaluated as numbers in this function, and so we don't need to do extra castings here.
             switch (node.operator) {
             case '+':
                 return left + right;
@@ -551,16 +564,20 @@ TapDigit.Evaluator = function (ctx) {
             }
         }
 
+        // If it is an Identifier
         if (node.hasOwnProperty('Identifier')) {
+            // If it is a constant identifier
             if (context.Constants.hasOwnProperty(node.Identifier)) {
                 return context.Constants[node.Identifier];
             }
+            // If it is a variable identifier
             if (context.Variables.hasOwnProperty(node.Identifier)) {
                 return context.Variables[node.Identifier];
             }
             throw new SyntaxError('Unknown identifier');
         }
 
+        // Where variables get set in the context:
         if (node.hasOwnProperty('Assignment')) {
             right = exec(node.Assignment.value);
             context.Variables[node.Assignment.name.Identifier] = right;
@@ -572,6 +589,7 @@ TapDigit.Evaluator = function (ctx) {
             if (context.Functions.hasOwnProperty(expr.name)) {
                 args = [];
                 for (i = 0; i < expr.args.length; i += 1) {
+                    // For arguments that have nested expressions themselves, e.g., sin(cos(pi/4)).
                     args.push(exec(expr.args[i]));
                 }
                 return context.Functions[expr.name].apply(null, args);
@@ -582,6 +600,7 @@ TapDigit.Evaluator = function (ctx) {
         throw new SyntaxError('Unknown syntax node');
     }
 
+    // EvalTest.js instantiates TapDigit.Evaluator and calls this function, passing user's input as expr.
     function evaluate(expr) {
         var tree = parser.parse(expr);
         return exec(tree);
