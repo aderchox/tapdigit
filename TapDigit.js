@@ -432,7 +432,8 @@ TapDigit.Parser = function () {
     function parseAssignment() {
         var token, expr;
 
-        // parseAdditive is called first and earlier than the rest of the parseAssignment logic because parseAdditive is more precedent, e.g., in 'x = 4 + 2', '4 + 2' is more precedent than the 'x = 4'.
+        // Note1: parseAdditive is called first and earlier than the rest of the parseAssignment logic because parseAdditive is the "next more precedent" (not the most precedent yet) operation compared to the parseAssignment, e.g., in 'x = 4 + 2', '4 + 2' is more precedent than the 'x = 4'.
+        // Note2: Not to mistake expr (expression) here and the expression constructed at parseExpression level, they could be different. "expr" (or "expression") is just a "common name" generally given to any sub-components of a expression too, e.g., even as simple as a number string like "4".
         expr = parseAdditive();
 
         if (typeof expr !== 'undefined' && expr.Identifier) {
