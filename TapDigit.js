@@ -390,6 +390,7 @@ TapDigit.Parser = function () {
         // parseUnary is called first and earlier than the rest of the parseMultiplicative logic because parseUnary is more precedent, e.g., in '4 * -2', '-2' is more precedent than the '4 * -'.
         expr = parseUnary();
         token = lexer.peek();
+        // To cover cases like 4 / 2 / 2 properly, so that it parses to (4 / 2) / 2 and not 4 / (2 / 2).
         while (matchOp(token, '*') || matchOp(token, '/')) {
             token = lexer.next();
             expr = {
